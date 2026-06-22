@@ -1,0 +1,2 @@
+import { Metric, Shell } from '@/components/Shell';
+const m=['New applications','Active affiliates','Total clicks','Total enquiries','Clients won','Commission owed','Suspicious flags'];export default function Page(){return <Shell nav="admin"><div className="glass rounded-[2rem] p-8"><span className="badge">Admin</span><h1 className="mt-4 text-4xl font-black">Affiliate operations</h1><div className="mt-7 grid gap-4 md:grid-cols-4">{m.map(x=><Metric key={x} label={x} value={x==='Commission owed'?'R0':'0'}/>)}</div></div></Shell>}
