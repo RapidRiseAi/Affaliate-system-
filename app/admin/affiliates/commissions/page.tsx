@@ -1,0 +1,1 @@
+import { Shell } from '@/components/Shell';export default function Page(){return <Shell nav="admin"><section className="glass rounded-[2rem] p-8"><h1 className="text-4xl font-black">Commission tracker</h1><p className="mt-3 text-slate-300">Admin-only calculation and payout tracker with audit logging.</p></section></Shell>}
