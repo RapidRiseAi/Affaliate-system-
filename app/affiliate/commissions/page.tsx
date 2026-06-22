@@ -1,0 +1,2 @@
+import { Shell } from '@/components/Shell';
+export default function Page(){return <Shell><section className="glass rounded-[2rem] p-8"><span className="badge">Statements</span><h1 className="mt-4 text-4xl font-black">Commissions</h1><table className="table mt-6"><thead><tr><th>Deal</th><th>Type</th><th>Base</th><th>Rate</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td colSpan={6}>No commissions yet.</td></tr></tbody></table></section></Shell>}

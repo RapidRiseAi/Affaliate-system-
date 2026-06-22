@@ -1,0 +1,2 @@
+import { Shell } from '@/components/Shell';import { affiliateStatuses } from '@/lib/constants';
+export default function Page(){return <Shell><section className="glass rounded-[2rem] p-8"><span className="badge">Privacy-safe</span><h1 className="mt-4 text-4xl font-black">Lead status</h1><p className="mt-3 text-slate-300">Affiliates see status movement, not unnecessary client personal details.</p><div className="mt-6 grid gap-3 md:grid-cols-3">{affiliateStatuses.map(s=><div className="card" key={s}>{s}</div>)}</div></section></Shell>}
