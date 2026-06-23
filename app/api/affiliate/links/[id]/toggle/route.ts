@@ -1,22 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, getPortalAffiliateContext } from '@/lib/portal-auth';
-import { hasTrustedOrigin, logServerError, publicApiError } from '@/lib/server-security';
+import { hasTrustedOrigin, logServerError } from '@/lib/server-security';
 import { adminSupabase } from '@/lib/supabase';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!hasTrustedOrigin(req)) return publicApiError('invalid_origin', 403, 'Request origin was rejected.');
+  const fail = () => NextResponse.redirect(new URL('/affiliate/links?error=update', req.url), 303);
+  if (!hasTrustedOrigin(req)) return fail();
   const authUser = await getAuthenticatedUser();
-  if (!authUser) return publicApiError('authentication_required', 401, 'Authentication required.');
+  if (!authUser) return NextResponse.redirect(new URL('/partners/login', req.url), 303);
   const context = await getPortalAffiliateContext(authUser);
-  if (!context) return publicApiError('affiliate_required', 403, 'Active affiliate access required.');
+  if (!context) return NextResponse.redirect(new URL('/affiliate/dashboard', req.url), 303);
   const { id } = await params;
   const supabase = adminSupabase();
   const { data: link, error: findError } = await supabase.from('affiliate_portal_tracking_links').select('id,is_active').eq('id', id).eq('affiliate_id', context.affiliate.id).maybeSingle();
-  if (findError || !link) return publicApiError('tracking_link_not_found', 404, 'Tracking link was not found.');
+  if (findError || !link) return fail();
   const { error } = await supabase.from('affiliate_portal_tracking_links').update({ is_active: !link.is_active }).eq('id', id).eq('affiliate_id', context.affiliate.id);
   if (error) {
     logServerError('affiliate_tracking_link_toggle_failed', error);
-    return publicApiError('tracking_link_update_failed');
+    return fail();
   }
   const { error: auditError } = await supabase.from('affiliate_portal_audit_events').insert({
     actor_auth_user_id: authUser.id,

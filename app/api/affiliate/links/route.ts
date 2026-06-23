@@ -6,7 +6,6 @@ import { containsPrivateData, randomToken, slugifyCode } from '@/lib/security';
 import {
   hasTrustedOrigin,
   logServerError,
-  publicApiError,
 } from '@/lib/server-security';
 import { adminSupabase } from '@/lib/supabase';
 
@@ -22,30 +21,32 @@ const linkSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const fail = (code: string) => {
+    const target = new URL('/affiliate/links', req.url);
+    target.searchParams.set('error', code);
+    return NextResponse.redirect(target, 303);
+  };
   if (!hasTrustedOrigin(req)) {
-    return publicApiError('invalid_origin', 403, 'Request origin was rejected.');
+    return fail('invalid');
   }
   const authUser = await getAuthenticatedUser();
-  if (!authUser) return publicApiError('authentication_required', 401, 'Authentication required.');
+  if (!authUser) return NextResponse.redirect(new URL('/partners/login', req.url), 303);
 
   const context = await getPortalAffiliateContext(authUser);
-  if (!context) return publicApiError('affiliate_required', 403, 'Active affiliate access required.');
+  if (!context) return NextResponse.redirect(new URL('/affiliate/dashboard', req.url), 303);
 
   const parsed = linkSchema.safeParse(Object.fromEntries(await req.formData()));
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid tracking-link details' }, { status: 400 });
+    return fail('invalid');
   }
   if (!destinationValues.has(parsed.data.destination_url)) {
-    return NextResponse.json({ error: 'Destination is not allowed' }, { status: 400 });
+    return fail('invalid');
   }
   if (!channelValues.has(parsed.data.channel)) {
-    return NextResponse.json({ error: 'Channel is not allowed' }, { status: 400 });
+    return fail('invalid');
   }
   if (parsed.data.custom_alias && containsPrivateData(parsed.data.custom_alias)) {
-    return NextResponse.json(
-      { error: 'Custom aliases cannot contain private or sensitive data.' },
-      { status: 400 },
-    );
+    return fail('invalid');
   }
 
   const customAlias = parsed.data.custom_alias
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     : null;
   const trackingToken = customAlias || randomToken();
   if (trackingToken.length < 4) {
-    return NextResponse.json({ error: 'Custom alias is too short' }, { status: 400 });
+    return fail('invalid');
   }
 
   const supabase = adminSupabase();
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
 
   if (insertError) {
     logServerError('affiliate_tracking_link_insert_failed', insertError);
-    return publicApiError('tracking_link_failed', 409, 'Tracking link could not be created.');
+    return fail('duplicate');
   }
 
   const { error: auditError } = await supabase.from('affiliate_portal_audit_events').insert({

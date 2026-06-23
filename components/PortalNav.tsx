@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BarChart3, CircleDollarSign, FileText, LayoutDashboard, Link2, LogIn, LogOut, Send } from 'lucide-react';
+import { AsyncSubmitButton } from './AsyncSubmitButton';
 
 const affiliateLinks = [
   ['/affiliate/dashboard', 'Overview', LayoutDashboard],
@@ -25,7 +26,7 @@ export function PortalNav({ mode }: { mode: 'affiliate' | 'public' }) {
         const active = pathname === href;
         return <Link key={href} href={href} data-active={active} aria-current={active ? 'page' : undefined} className="btn btn-muted min-w-0 flex-1 px-3 py-2 text-xs md:flex-none md:text-sm"><Icon aria-hidden size={17} /><span>{label}</span></Link>;
       })}
-      {mode === 'affiliate' ? <form action="/auth/logout" method="post"><button className="btn btn-muted h-full px-3 py-2 text-xs md:text-sm" aria-label="Sign out"><LogOut aria-hidden size={17} /><span className="hidden lg:inline">Sign out</span></button></form> : null}
+      {mode === 'affiliate' ? <form action="/auth/logout" method="post"><AsyncSubmitButton pendingLabel="Signing out…" className="btn-muted h-full px-3 py-2 text-xs md:text-sm" aria-label="Sign out"><LogOut aria-hidden size={17} /><span className="hidden lg:inline">Sign out</span></AsyncSubmitButton></form> : null}
     </div>
   </nav>;
 }

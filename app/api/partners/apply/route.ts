@@ -3,7 +3,6 @@ import { z } from 'zod';
 import {
   hasTrustedOrigin,
   logServerError,
-  publicApiError,
 } from '@/lib/server-security';
 import { adminSupabase, serverSupabase } from '@/lib/supabase';
 
@@ -28,14 +27,25 @@ const applicationSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const wantsJson = req.headers.get('x-portal-request') === 'fetch';
+  const fail = (code: string, status: number, message: string) => {
+    if (wantsJson) return NextResponse.json({ error: message, code }, { status });
+    const target = new URL('/partners/apply', req.url);
+    target.searchParams.set('error', code);
+    return NextResponse.redirect(target, 303);
+  };
+  const succeed = () => wantsJson
+    ? NextResponse.json({ ok: true, redirect: '/partners/login?status=verify-email' })
+    : NextResponse.redirect(new URL('/partners/login?status=verify-email', req.url), 303);
+
   if (!hasTrustedOrigin(req)) {
-    return publicApiError('invalid_origin', 403, 'Request origin was rejected.');
+    return fail('invalid_origin', 403, 'Request origin was rejected.');
   }
 
   const form = Object.fromEntries(await req.formData());
   const parsed = applicationSchema.safeParse(form);
   if (!parsed.success) {
-    return publicApiError(
+    return fail(
       'invalid_application',
       400,
       parsed.error.issues[0]?.message ?? 'Invalid application',
@@ -43,6 +53,26 @@ export async function POST(req: Request) {
   }
 
   const { password, ...data } = parsed.data;
+  const admin = adminSupabase();
+  const findApplication = () => admin
+    .from('affiliate_portal_partner_applications')
+    .select('id,status')
+    .eq('email', data.email)
+    .limit(1)
+    .maybeSingle();
+  const { data: existingApplication, error: existingApplicationError } = await findApplication();
+  if (existingApplicationError) {
+    logServerError('affiliate_application_duplicate_check_failed', existingApplicationError);
+    return fail('application_failed', 500, 'We could not check this application. Please try again.');
+  }
+  if (existingApplication) {
+    return fail(
+      'already_submitted',
+      409,
+      'An application has already been submitted with this email address. Check your inbox for the verification email or sign in to view its status.',
+    );
+  }
+
   const supabase = await serverSupabase();
   const redirectBase = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
   const { data: signup, error: signupError } = await supabase.auth.signUp({
@@ -55,14 +85,16 @@ export async function POST(req: Request) {
 
   if (signupError || !signup.user || signup.user.identities?.length === 0) {
     logServerError('affiliate_signup_failed', signupError);
-    return publicApiError(
-      'signup_failed',
-      400,
-      'Unable to start signup. Use a different email or try again later.',
-    );
+    const { data: racedApplication } = await findApplication();
+    if (racedApplication) {
+      return fail('already_submitted', 409, 'This application was already received. Check your inbox for the verification email.');
+    }
+    if (signupError?.status === 429 || signupError?.code?.includes('rate')) {
+      return fail('rate_limited', 429, 'Too many attempts were made. Please wait a minute before trying again.');
+    }
+    return fail('email_in_use', 409, 'This email address is already in use. Sign in with the existing account or use a different email address.');
   }
 
-  const admin = adminSupabase();
   const { error: applicationError } = await admin
     .from('affiliate_portal_partner_applications')
     .insert({
@@ -84,13 +116,13 @@ export async function POST(req: Request) {
 
   if (applicationError) {
     logServerError('affiliate_application_insert_failed', applicationError);
+    if (applicationError.code === '23505') {
+      return fail('already_submitted', 409, 'This application was already received. Check your inbox for the verification email.');
+    }
     const { error: cleanupError } = await admin.auth.admin.deleteUser(signup.user.id);
     if (cleanupError) logServerError('affiliate_signup_cleanup_failed', cleanupError);
-    return publicApiError('application_failed');
+    return fail('application_failed', 500, 'We could not save the application. Please try again once.');
   }
 
-  return NextResponse.redirect(
-    new URL('/partners/login?status=verify-email', req.url),
-    303,
-  );
+  return succeed();
 }

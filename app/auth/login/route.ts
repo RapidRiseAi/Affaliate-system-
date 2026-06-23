@@ -20,6 +20,9 @@ export async function POST(req: Request) {
   const supabase = await serverSupabase();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data.user) {
+    if (error?.code === 'email_not_confirmed') {
+      return NextResponse.redirect(new URL('/partners/login?error=unverified', req.url), 303);
+    }
     return NextResponse.redirect(new URL('/partners/login?error=invalid', req.url), 303);
   }
 

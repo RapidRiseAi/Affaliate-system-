@@ -63,6 +63,7 @@ button, select { cursor: pointer; }
 }
 .input::placeholder { color: #73839a; }
 .input:focus { border-color: var(--cyan); background: rgba(8,17,30,.94); box-shadow: 0 0 0 3px rgba(72,217,255,.13); }
+.input:disabled { cursor: wait; opacity: .58; }
 .btn {
   display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; gap: .5rem;
   border-radius: .85rem; border: 1px solid transparent; padding: .7rem 1.05rem; font-weight: 750;
