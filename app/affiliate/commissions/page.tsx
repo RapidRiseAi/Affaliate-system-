@@ -23,7 +23,7 @@ export default async function Page() {
   const { data: snapshots } = commissionIds.length
     ? await supabase
         .from('affiliate_portal_commission_snapshots')
-        .select('commission_id,base_amount_cents,rate_percent')
+        .select('commission_id,base_amount_cents,rate_percent,commission_model,service_id,services(name)')
         .in('commission_id', commissionIds)
     : { data: [] };
   const snapshotByCommission = new Map(
@@ -41,9 +41,9 @@ export default async function Page() {
             {commissions?.length ? commissions.map((commission) => (
               <tr key={commission.id}>
                 <td>{commission.quotes?.[0]?.quote_number ?? commission.projects?.[0]?.name ?? commission.payments?.[0]?.reference ?? '—'}</td>
-                <td>{commission.commission_type}</td>
+                <td>{snapshotByCommission.get(commission.id)?.commission_model === 'BUILD_COST' ? 'Build cost' : snapshotByCommission.get(commission.id)?.commission_model === 'LIFETIME' ? 'Lifetime' : commission.commission_type}</td>
                 <td>{snapshotByCommission.has(commission.id)
-                  ? `${formatZar(snapshotByCommission.get(commission.id)!.base_amount_cents)} at ${snapshotByCommission.get(commission.id)!.rate_percent}%`
+                  ? `${snapshotByCommission.get(commission.id)!.services?.[0]?.name ?? 'Product'} · ${formatZar(snapshotByCommission.get(commission.id)!.base_amount_cents)} at ${snapshotByCommission.get(commission.id)!.rate_percent}%`
                   : 'CRM amount only'}</td>
                 <td>{formatZar(commission.amount_cents)}</td>
                 <td>{commission.status}</td>

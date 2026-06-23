@@ -16,13 +16,6 @@ export type PortalAffiliateContext = {
   };
 };
 
-export type PortalAdminContext = {
-  authUser: User;
-  crmUserId: string;
-  roleName: string;
-  permissions: string[];
-};
-
 export async function getAuthenticatedUser() {
   const supabase = await serverSupabase();
   const { data, error } = await supabase.auth.getUser();
@@ -55,49 +48,6 @@ export async function getPortalAffiliateContext(
 
   if (affiliateError || !affiliate || affiliate.status !== 'ACTIVE') return null;
   return { authUser: user, affiliate };
-}
-
-export async function getPortalAdminContext(
-  authUser: User | null = null,
-): Promise<PortalAdminContext | null> {
-  const user = authUser ?? await getAuthenticatedUser();
-  if (!user) return null;
-
-  const admin = adminSupabase();
-  const { data: link, error: linkError } = await admin
-    .from('affiliate_portal_user_links')
-    .select('crm_user_id')
-    .eq('auth_user_id', user.id)
-    .not('crm_user_id', 'is', null)
-    .maybeSingle();
-
-  if (linkError || !link?.crm_user_id) return null;
-
-  const { data: crmUser, error: userError } = await admin
-    .from('users')
-    .select('id,status,role_id')
-    .eq('id', link.crm_user_id)
-    .maybeSingle();
-
-  if (userError || !crmUser || crmUser.status !== 'ACTIVE') return null;
-
-  const { data: role, error: roleError } = await admin
-    .from('roles')
-    .select('name,permissions')
-    .eq('id', crmUser.role_id)
-    .maybeSingle();
-
-  const permissions = Array.isArray(role?.permissions)
-    ? role.permissions.filter((value): value is string => typeof value === 'string')
-    : [];
-
-  if (roleError || !role || !permissions.includes('settings:manage')) return null;
-  return {
-    authUser: user,
-    crmUserId: crmUser.id,
-    roleName: role.name,
-    permissions,
-  };
 }
 
 export function formatZar(cents: number) {

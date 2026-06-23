@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { hasTrustedOrigin } from '@/lib/server-security';
-import { adminSupabase, serverSupabase } from '@/lib/supabase';
+import { serverSupabase } from '@/lib/supabase';
 
 const loginSchema = z.object({
   email: z.string().trim().email(),
@@ -23,15 +23,5 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL('/partners/login?error=invalid', req.url), 303);
   }
 
-  const { data: portalLink } = await adminSupabase()
-    .from('affiliate_portal_user_links')
-    .select('crm_user_id')
-    .eq('auth_user_id', data.user.id)
-    .not('crm_user_id', 'is', null)
-    .maybeSingle();
-  const destination = portalLink?.crm_user_id
-    ? '/admin/affiliates'
-    : '/affiliate/dashboard';
-
-  return NextResponse.redirect(new URL(destination, req.url), 303);
+  return NextResponse.redirect(new URL('/affiliate/dashboard', req.url), 303);
 }

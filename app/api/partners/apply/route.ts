@@ -18,6 +18,7 @@ const applicationSchema = z.object({
   google_business_url: z.string().trim().max(500),
   client_types: z.string().trim().min(1).max(1000),
   motivation: z.string().trim().min(1).max(3000),
+  preferred_commission_model: z.enum(['BUILD_COST', 'LIFETIME']),
   password: z.string().min(8).max(128),
   confirm_password: z.string(),
   terms: z.literal('on'),
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
       google_business_url: data.google_business_url || null,
       client_types: data.client_types,
       motivation: data.motivation,
+      preferred_commission_model: data.preferred_commission_model,
       status: 'pending_review',
       terms_accepted_at: new Date().toISOString(),
     });

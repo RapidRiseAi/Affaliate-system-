@@ -7,7 +7,7 @@ const sql = await readFile(
 );
 const applicationCode = await Promise.all([
   '../app/api/partners/apply/route.ts',
-  '../app/api/admin/applications/[id]/approve/route.ts',
+  '../app/auth/login/route.ts',
   '../app/r/[affiliateCode]/[trackingToken]/route.ts',
   '../lib/security.ts',
 ].map(async (path) => readFile(new URL(path, import.meta.url), 'utf8')));
@@ -88,7 +88,7 @@ assert.doesNotMatch(code, /auth\.admin\.createUser|email_confirm\s*:/i);
 assert.doesNotMatch(code, /sha256|ip_hash|user_agent_hash/i);
 assert.doesNotMatch(code, /\.eq\(['"]email['"],\s*application\.email\)/i);
 assert.match(code, /auth\.signUp\(/i);
-assert.match(code, /affiliate_portal_approve_application/i);
+assert.doesNotMatch(code, /\/admin\/affiliates/i);
 
 for (const requiredIndex of [
   'affiliate_portal_user_links_created_by_idx',
