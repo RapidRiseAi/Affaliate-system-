@@ -5,4 +5,16 @@ export const destinations = [
   { label: 'Contact', value: '/contact' }, { label: 'Free Audit', value: '/free-audit' }
 ];
 export const channels = ['WhatsApp','Instagram DM','Facebook','LinkedIn','Email','Phone follow-up','In-person','Other'];
-export const affiliateStatuses = ['Clicked','Enquiry received','In review','Call booked','Quoted','Client won','Commission pending','Commission paid','Not commissionable'];
+export const affiliateStatuses = [
+  ['NEW_LEAD', 'New enquiry'],
+  ['CONTACTED', 'Contacted'],
+  ['REPLIED', 'Replied'],
+  ['DISCOVERY_NEEDED', 'Discovery needed'],
+  ['DISCOVERY_COMPLETED', 'Discovery completed'],
+  ['QUOTE_NEEDED', 'Quote needed'],
+  ['QUOTE_SENT', 'Quote sent'],
+  ['NEGOTIATING', 'Negotiating'],
+  ['WON', 'Client won'],
+  ['LOST', 'Lost'],
+  ['FOLLOW_UP_LATER', 'Follow up later'],
+] as const;

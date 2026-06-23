@@ -1,2 +1,85 @@
-import { NextResponse } from 'next/server';import { adminSupabase } from '@/lib/supabase';import { sha256 } from '@/lib/security';
-export async function GET(req:Request,{params}:{params:Promise<{affiliateCode:string;trackingToken:string}>}){const {affiliateCode,trackingToken}=await params;const supabase=adminSupabase();const {data:link}=await supabase.from('tracking_links').select('*,affiliates!inner(id,affiliate_code)').eq('tracking_token',trackingToken).eq('affiliates.affiliate_code',affiliateCode).eq('is_active',true).single();if(!link)return NextResponse.redirect(new URL('/partners?ref=invalid',req.url));const sid=crypto.randomUUID();const ua=req.headers.get('user-agent')||'';const ip=req.headers.get('x-forwarded-for')||'';await supabase.from('click_events').insert({tracking_link_id:link.id,affiliate_id:link.affiliate_id,session_id:sid,landing_page:link.destination_url,referrer:req.headers.get('referer'),ip_hash:await sha256(ip),user_agent_hash:await sha256(ua)});await supabase.from('referral_sessions').insert({session_id:sid,affiliate_id:link.affiliate_id,tracking_link_id:link.id,attribution_expires_at:new Date(Date.now()+90*864e5).toISOString()});const res=NextResponse.redirect(new URL(link.destination_url,process.env.NEXT_PUBLIC_SITE_URL||req.url));res.cookies.set('rrai_ref',JSON.stringify({affiliateCode,trackingToken,sessionId:sid,firstClickAt:new Date().toISOString(),landingPage:link.destination_url}),{httpOnly:false,sameSite:'lax',secure:true,maxAge:90*86400,path:'/'});return res}
+import { NextResponse } from 'next/server';
+import { adminSupabase } from '@/lib/supabase';
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ affiliateCode: string; trackingToken: string }> },
+) {
+  const { affiliateCode, trackingToken } = await params;
+  const supabase = adminSupabase();
+
+  const { data: affiliate } = await supabase
+    .from('affiliates')
+    .select('id,tracking_code,status')
+    .eq('tracking_code', affiliateCode)
+    .eq('status', 'ACTIVE')
+    .maybeSingle();
+
+  if (!affiliate) {
+    return NextResponse.redirect(new URL('/partners?ref=invalid', req.url));
+  }
+
+  const { data: link } = await supabase
+    .from('affiliate_portal_tracking_links')
+    .select('id,affiliate_id,destination_url,is_active,expires_at')
+    .eq('affiliate_id', affiliate.id)
+    .eq('tracking_token', trackingToken)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!link || (link.expires_at && new Date(link.expires_at) <= new Date())) {
+    return NextResponse.redirect(new URL('/partners?ref=invalid', req.url));
+  }
+
+  const sessionId = crypto.randomUUID();
+  const firstClickAt = new Date();
+  const attributionExpiresAt = new Date(firstClickAt.getTime() + 90 * 86_400_000);
+
+  const [clickResult, sessionResult] = await Promise.all([
+    supabase.from('affiliate_portal_click_events').insert({
+      tracking_link_id: link.id,
+      affiliate_id: affiliate.id,
+      session_id: sessionId,
+      landing_page: link.destination_url,
+      referrer: req.headers.get('referer'),
+    }),
+    supabase.from('affiliate_portal_referral_sessions').insert({
+      session_id: sessionId,
+      affiliate_id: affiliate.id,
+      tracking_link_id: link.id,
+      first_click_at: firstClickAt.toISOString(),
+      last_click_at: firstClickAt.toISOString(),
+      attribution_expires_at: attributionExpiresAt.toISOString(),
+    }),
+  ]);
+
+  if (clickResult.error || sessionResult.error) {
+    console.error('Affiliate attribution event could not be fully recorded', {
+      click: clickResult.error?.code,
+      session: sessionResult.error?.code,
+    });
+  }
+
+  const destination = new URL(
+    link.destination_url,
+    process.env.NEXT_PUBLIC_SITE_URL || req.url,
+  );
+  const response = NextResponse.redirect(destination);
+  response.cookies.set(
+    'rrai_ref',
+    JSON.stringify({
+      affiliateCode,
+      trackingToken,
+      sessionId,
+      firstClickAt: firstClickAt.toISOString(),
+    }),
+    {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: new URL(req.url).protocol === 'https:',
+      maxAge: 90 * 86_400,
+      path: '/',
+    },
+  );
+  return response;
+}

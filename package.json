@@ -4,7 +4,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:rls": "node scripts/test-affiliate-rls.mjs",
+    "test:migration": "node scripts/check-affiliate-migration.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "latest",
@@ -22,6 +24,7 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.3",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

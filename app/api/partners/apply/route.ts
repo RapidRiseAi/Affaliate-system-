@@ -1,2 +1,94 @@
-import { NextResponse } from 'next/server';import { adminSupabase } from '@/lib/supabase';import { sendEmail } from '@/lib/email';
-export async function POST(req: Request){const f=await req.formData();const email=String(f.get('email')||'');const password=String(f.get('password')||'');if(password!==String(f.get('confirm_password')||''))return NextResponse.json({error:'Passwords do not match'},{status:400});const supabase=adminSupabase();const {data:created,error}=await supabase.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{role:'applicant'}});if(error)return NextResponse.json({error:error.message},{status:400});const row={user_id:created.user.id,first_name:String(f.get('first_name')),surname:String(f.get('surname')),business_name:String(f.get('business_name')),email,phone:String(f.get('phone')),website_url:String(f.get('website_url')||''),social_links:String(f.get('social_links')||''),google_business_url:String(f.get('google_business_url')||''),client_types:String(f.get('client_types')),motivation:String(f.get('motivation')),status:'pending_review'};await supabase.from('partner_applications').insert(row);await supabase.from('app_users').insert({id:created.user.id,email,role:'applicant',account_status:'pending_review'});await sendEmail({to:email,subject:'Your Rapid Rise AI Partner Application Has Been Received',html:`Hi ${row.first_name},<br/>Your application is now under review.`});if(process.env.ADMIN_EMAIL)await sendEmail({to:process.env.ADMIN_EMAIL,subject:'New Partner Application Received',html:`Applicant: ${row.first_name} ${row.surname}<br/>Business: ${row.business_name}<br/>Email: ${email}`});return NextResponse.redirect(new URL('/affiliate/dashboard?status=pending',req.url),303)}
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import {
+  hasTrustedOrigin,
+  logServerError,
+  publicApiError,
+} from '@/lib/server-security';
+import { adminSupabase, serverSupabase } from '@/lib/supabase';
+
+const applicationSchema = z.object({
+  first_name: z.string().trim().min(1).max(100),
+  surname: z.string().trim().min(1).max(100),
+  business_name: z.string().trim().min(1).max(200),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+  phone: z.string().trim().min(6).max(50),
+  website_url: z.string().trim().max(500),
+  social_links: z.string().trim().max(1000),
+  google_business_url: z.string().trim().max(500),
+  client_types: z.string().trim().min(1).max(1000),
+  motivation: z.string().trim().min(1).max(3000),
+  password: z.string().min(8).max(128),
+  confirm_password: z.string(),
+  terms: z.literal('on'),
+}).refine((value) => value.password === value.confirm_password, {
+  message: 'Passwords do not match',
+  path: ['confirm_password'],
+});
+
+export async function POST(req: Request) {
+  if (!hasTrustedOrigin(req)) {
+    return publicApiError('invalid_origin', 403, 'Request origin was rejected.');
+  }
+
+  const form = Object.fromEntries(await req.formData());
+  const parsed = applicationSchema.safeParse(form);
+  if (!parsed.success) {
+    return publicApiError(
+      'invalid_application',
+      400,
+      parsed.error.issues[0]?.message ?? 'Invalid application',
+    );
+  }
+
+  const { password, ...data } = parsed.data;
+  const supabase = await serverSupabase();
+  const redirectBase = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  const { data: signup, error: signupError } = await supabase.auth.signUp({
+    email: data.email,
+    password,
+    options: {
+      emailRedirectTo: `${redirectBase.replace(/\/$/, '')}/auth/callback`,
+    },
+  });
+
+  if (signupError || !signup.user || signup.user.identities?.length === 0) {
+    logServerError('affiliate_signup_failed', signupError);
+    return publicApiError(
+      'signup_failed',
+      400,
+      'Unable to start signup. Use a different email or try again later.',
+    );
+  }
+
+  const admin = adminSupabase();
+  const { error: applicationError } = await admin
+    .from('affiliate_portal_partner_applications')
+    .insert({
+      auth_user_id: signup.user.id,
+      first_name: data.first_name,
+      surname: data.surname,
+      business_name: data.business_name,
+      email: data.email,
+      phone: data.phone,
+      website_url: data.website_url || null,
+      social_links: data.social_links || null,
+      google_business_url: data.google_business_url || null,
+      client_types: data.client_types,
+      motivation: data.motivation,
+      status: 'pending_review',
+      terms_accepted_at: new Date().toISOString(),
+    });
+
+  if (applicationError) {
+    logServerError('affiliate_application_insert_failed', applicationError);
+    const { error: cleanupError } = await admin.auth.admin.deleteUser(signup.user.id);
+    if (cleanupError) logServerError('affiliate_signup_cleanup_failed', cleanupError);
+    return publicApiError('application_failed');
+  }
+
+  return NextResponse.redirect(
+    new URL('/partners/login?status=verify-email', req.url),
+    303,
+  );
+}
