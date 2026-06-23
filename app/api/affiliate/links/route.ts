@@ -87,12 +87,7 @@ export async function POST(req: Request) {
   });
   if (auditError) logServerError('affiliate_tracking_link_audit_failed', auditError);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.rapidriseai.com';
-  const path = [
-    'r',
-    encodeURIComponent(context.affiliate.tracking_code),
-    encodeURIComponent(trackingToken),
-  ].join('/');
-
-  return NextResponse.json({ url: `${siteUrl.replace(/\/$/, '')}/${path}` });
+  const redirectUrl = new URL('/affiliate/links', req.url);
+  redirectUrl.searchParams.set('created', trackingToken);
+  return NextResponse.redirect(redirectUrl, 303);
 }

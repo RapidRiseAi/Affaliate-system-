@@ -40,13 +40,13 @@ export default async function Page() {
 
   return (
     <Shell>
-      <section className="glass rounded-[2rem] p-8">
-        <span className="badge">Privacy-safe CRM status</span>
-        <h1 className="mt-4 text-4xl font-black">Lead status</h1>
+      <section className="glass rounded-[2rem] p-7 md:p-9">
+        <p className="eyebrow">Privacy-safe CRM status</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Referral pipeline</h1>
         <p className="mt-3 text-slate-300">
           Contact details stay in the CRM; the portal exposes only service, stage, and timing.
         </p>
-        <table className="table mt-6">
+        <div className="table-wrap mt-6"><table className="table">
           <thead><tr><th>Reference</th><th>Service</th><th>Stage</th><th>Attributed</th></tr></thead>
           <tbody>
             {attributions?.length ? attributions.map((attribution) => {
@@ -62,7 +62,7 @@ export default async function Page() {
               );
             }) : <tr><td colSpan={4}>No attributed leads yet.</td></tr>}
           </tbody>
-        </table>
+        </table></div>
       </section>
     </Shell>
   );

@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowRight, BadgePercent, Link2, ShieldCheck } from 'lucide-react';
 import { Metric, Shell } from '@/components/Shell';
 import {
   formatZar,
@@ -48,12 +50,10 @@ export default async function Page() {
     supabase.from('affiliate_portal_referral_sessions').select('id', { count: 'exact', head: true }).eq('affiliate_id', affiliateId),
     supabase.from('referrals').select('id,lead_id').eq('affiliate_id', affiliateId),
     supabase.from('commissions').select('amount_cents,status').eq('affiliate_id', affiliateId),
-    supabase.from('affiliate_portal_agreements').select('id,commission_model,default_rate_percent,status,effective_from,effective_to,signed_at,terms_summary').eq('affiliate_id', affiliateId).eq('status', 'ACTIVE').maybeSingle(),
+    supabase.from('affiliate_portal_agreements').select('id,commission_model,default_rate_percent,status,effective_from,effective_to,signed_at,terms_summary,affiliate_portal_agreement_rates(rate_percent,notes,services(name))').eq('affiliate_id', affiliateId).eq('status', 'ACTIVE').maybeSingle(),
   ]);
   const agreement = agreementResult.data;
-  const { data: productRates } = agreement
-    ? await supabase.from('affiliate_portal_agreement_rates').select('rate_percent,notes,services(name)').eq('agreement_id', agreement.id)
-    : { data: [] };
+  const productRates = agreement?.affiliate_portal_agreement_rates ?? [];
 
   const referralIds = (referrals.data ?? []).map(({ id }) => id);
   const { data: attributions } = referralIds.length
@@ -90,22 +90,22 @@ export default async function Page() {
 
   return (
     <Shell>
-      <div className="glass rounded-[2rem] p-8">
-        <span className="badge">Active CRM affiliate</span>
-        <h1 className="mt-4 text-4xl font-black">Referral overview</h1>
-        <p className="mt-3 max-w-3xl text-slate-300">
-          Affiliate code: <strong>{context.affiliate.tracking_code}</strong>
-        </p>
-        <div className="mt-7 grid gap-4 md:grid-cols-4">
+      <section className="glass relative overflow-hidden rounded-[2rem] p-7 md:p-10">
+        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
+        <div className="relative flex flex-wrap items-end justify-between gap-6"><div><span className="badge"><ShieldCheck aria-hidden size={14} />Active CRM affiliate</span><h1 className="mt-5 text-4xl font-black tracking-[-.035em] md:text-5xl">Partner overview</h1><p className="mt-3 max-w-3xl text-slate-300">A privacy-safe view of your referral activity, pipeline progress and earned commission.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 px-5 py-4"><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Affiliate code</p><p className="mt-1 font-mono text-lg font-bold text-cyan-300">{context.affiliate.tracking_code}</p></div></div>
+        <div className="relative mt-8 grid gap-3 sm:grid-cols-2"><Link href="/affiliate/links" className="btn btn-primary"><Link2 aria-hidden size={17} />Create referral link <ArrowRight aria-hidden size={17} /></Link><Link href="/affiliate/commissions" className="btn btn-muted"><BadgePercent aria-hidden size={17} />View commission statement</Link></div>
+      </section>
+      <section className="mt-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {metrics.map(([label, value]) => (
             <Metric key={label} label={String(label)} value={String(value)} />
           ))}
         </div>
-        <section className="mt-7 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="text-xl font-bold">Your commission agreement</h2>
-          {agreement ? <div className="mt-3 grid gap-3 text-slate-300"><p><strong className="text-white">Model:</strong> {agreement.commission_model === 'BUILD_COST' ? 'Build-cost commission' : 'Lifetime commission'}</p><p><strong className="text-white">Default rate:</strong> {agreement.default_rate_percent ? `${agreement.default_rate_percent}%` : 'Product-specific rates only'}</p>{agreement.terms_summary ? <p><strong className="text-white">Terms:</strong> {agreement.terms_summary}</p> : null}{productRates?.length ? <div><strong className="text-white">Product-specific rates:</strong><ul className="mt-2 grid gap-2">{productRates.map((rate, index) => <li key={index} className="badge w-fit">{rate.services?.[0]?.name ?? 'Product'} · {rate.rate_percent}%</li>)}</ul></div> : null}</div> : <p className="mt-3 text-slate-300">Your portal access is active, but no signed commission agreement is currently active. Rapid Rise AI will confirm your negotiated model and rates before commissions are created.</p>}
+        <section className="glass mt-6 rounded-[2rem] p-6 md:p-8">
+          <p className="eyebrow">Commercial terms</p><h2 className="mt-2 section-title">Your commission agreement</h2>
+          {agreement ? <div className="mt-5 grid gap-5 lg:grid-cols-[.7fr_1.3fr]"><div className="card"><p className="text-xs font-bold uppercase tracking-[.12em] text-slate-500">Commission model</p><p className="mt-2 text-xl font-black">{agreement.commission_model === 'BUILD_COST' ? 'Build-cost commission' : 'Lifetime commission'}</p><p className="mt-4 text-sm text-slate-400">Default rate</p><p className="mt-1 text-3xl font-black text-cyan-300">{agreement.default_rate_percent ? `${agreement.default_rate_percent}%` : 'By product'}</p></div><div className="card"><h3 className="font-bold">Negotiated terms</h3><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">{agreement.terms_summary ?? 'Refer to your signed agreement.'}</p>{productRates.length ? <div className="mt-5"><p className="text-xs font-bold uppercase tracking-[.12em] text-slate-500">Product-specific rates</p><ul className="mt-3 flex flex-wrap gap-2">{productRates.map((rate, index) => <li key={index} className="badge">{rate.services?.[0]?.name ?? 'Product'} · {rate.rate_percent}%</li>)}</ul></div> : null}</div></div> : <div className="card mt-5"><p className="text-slate-300">Your portal access is active, but no signed commission agreement is currently active. Rapid Rise AI will confirm your negotiated model and rates before commissions are created.</p></div>}
         </section>
-      </div>
+      </section>
     </Shell>
   );
 }

@@ -32,10 +32,11 @@ export default async function Page() {
 
   return (
     <Shell>
-      <section className="glass rounded-[2rem] p-8">
-        <span className="badge">CRM statements</span>
-        <h1 className="mt-4 text-4xl font-black">Commissions</h1>
-        <table className="table mt-6">
+      <section className="glass rounded-[2rem] p-7 md:p-9">
+        <p className="eyebrow">CRM statements</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Commission statement</h1>
+        <p className="mt-3 max-w-2xl text-slate-300">Every amount is backed by the agreement model, product rate and source CRM record used for calculation.</p>
+        <div className="table-wrap mt-6"><table className="table">
           <thead><tr><th>CRM record</th><th>Type</th><th>Base / rate</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
           <tbody>
             {commissions?.length ? commissions.map((commission) => (
@@ -51,7 +52,7 @@ export default async function Page() {
               </tr>
             )) : <tr><td colSpan={6}>No commissions yet.</td></tr>}
           </tbody>
-        </table>
+        </table></div>
       </section>
     </Shell>
   );
