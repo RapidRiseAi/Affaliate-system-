@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 
 const sql = await readFile(
   new URL('../supabase/migrations/0001_affiliate_system.sql', import.meta.url),
   'utf8',
 );
+const migrationDirectory = new URL('../supabase/migrations/', import.meta.url);
+const signatureMigrationName = (await readdir(migrationDirectory)).find((name) =>
+  name.endsWith('_affiliate_portal_signatures_notifications_payouts.sql'),
+);
+assert.ok(signatureMigrationName, 'electronic signature migration exists');
+const signatureSql = await readFile(new URL(signatureMigrationName, migrationDirectory), 'utf8');
 const applicationCode = await Promise.all([
   '../app/api/partners/apply/route.ts',
   '../app/auth/login/route.ts',
@@ -90,6 +97,40 @@ assert.doesNotMatch(code, /\.eq\(['"]email['"],\s*application\.email\)/i);
 assert.match(code, /auth\.signUp\(/i);
 assert.doesNotMatch(code, /\/admin\/affiliates/i);
 
+for (const table of [
+  'affiliate_portal_agreement_signatures',
+  'affiliate_portal_notification_preferences',
+  'affiliate_portal_payout_batches',
+  'affiliate_portal_payout_items',
+]) {
+  assert.match(signatureSql, new RegExp(`create table public\\.${table}\\b`, 'i'));
+  assert.match(signatureSql, new RegExp(`alter table public\\.${table} enable row level security`, 'i'));
+}
+for (const policy of signatureSql.match(/create policy[\s\S]*?;/gi) ?? []) {
+  assert.match(policy, /\bto\s+authenticated\b/i);
+}
+for (const policy of (signatureSql.match(/create policy[\s\S]*?;/gi) ?? []).filter((value) => /\bfor\s+update\b/i.test(value))) {
+  assert.match(policy, /\busing\s*\(/i);
+  assert.match(policy, /\bwith\s+check\s*\(/i);
+}
+for (const functionName of [
+  'affiliate_portal_admin_send_agreement_for_signature',
+  'affiliate_portal_admin_cancel_signature_request',
+  'affiliate_portal_admin_update_agreement_status',
+  'affiliate_portal_sign_agreement',
+  'affiliate_portal_expire_signature_requests',
+  'affiliate_portal_admin_create_payout_batch',
+  'affiliate_portal_admin_update_payout_batch_status',
+]) {
+  assert.match(signatureSql, new RegExp(`create (?:or replace )?function public\\.${functionName}\\b[\\s\\S]*?set search_path = ''`, 'i'));
+  assert.match(signatureSql, new RegExp(`revoke all on function public\\.${functionName}[\\s\\S]*?from public, anon, authenticated, service_role`, 'i'));
+  assert.match(signatureSql, new RegExp(`grant execute on function public\\.${functionName}[\\s\\S]*?to service_role`, 'i'));
+}
+assert.match(signatureSql, /agreement_sha256/i);
+assert.match(signatureSql, /extensions\.digest/i);
+assert.match(signatureSql, /Electronic signature evidence is immutable/i);
+assert.doesNotMatch(signatureSql, /ip_hash|user_agent_hash|user_metadata|raw_user_meta_data/i);
+
 for (const requiredIndex of [
   'affiliate_portal_user_links_created_by_idx',
   'affiliate_portal_applications_reviewer_idx',
@@ -115,5 +156,9 @@ console.log(JSON.stringify({
   verifiedEmailGate: true,
   telemetryHashesStored: false,
   replacementCrmTables: 0,
+  electronicSignatures: true,
+  notificationPreferences: 7,
+  payoutBatches: true,
+  paymentCommissionAutomation: true,
   status: 'passed',
 }));

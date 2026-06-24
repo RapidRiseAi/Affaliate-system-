@@ -29,6 +29,15 @@ export default async function Page() {
   const snapshotByCommission = new Map(
     (snapshots ?? []).map((snapshot) => [snapshot.commission_id, snapshot]),
   );
+  const { data: payoutItems } = commissionIds.length
+    ? await supabase
+        .from('affiliate_portal_payout_items')
+        .select('commission_id,affiliate_portal_payout_batches(reference,status,scheduled_for,paid_at)')
+        .in('commission_id', commissionIds)
+    : { data: [] };
+  const payoutByCommission = new Map(
+    (payoutItems ?? []).map((item) => [item.commission_id, item.affiliate_portal_payout_batches?.[0]]),
+  );
 
   return (
     <Shell>
@@ -37,7 +46,7 @@ export default async function Page() {
         <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Commission statement</h1>
         <p className="mt-3 max-w-2xl text-slate-300">Every amount is backed by the agreement model, product rate and source CRM record used for calculation.</p>
         <div className="table-wrap mt-6"><table className="table">
-          <thead><tr><th>CRM record</th><th>Type</th><th>Base / rate</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+          <thead><tr><th>CRM record</th><th>Type</th><th>Base / rate</th><th>Amount</th><th>Status</th><th>Payout</th><th>Created</th></tr></thead>
           <tbody>
             {commissions?.length ? commissions.map((commission) => (
               <tr key={commission.id}>
@@ -48,9 +57,10 @@ export default async function Page() {
                   : 'CRM amount only'}</td>
                 <td>{formatZar(commission.amount_cents)}</td>
                 <td>{commission.status}</td>
+                <td>{payoutByCommission.get(commission.id) ? <><span className="block font-bold">{payoutByCommission.get(commission.id)?.reference}</span><span className="text-xs text-slate-500">{payoutByCommission.get(commission.id)?.status}</span></> : 'Not batched'}</td>
                 <td>{new Date(commission.created_at).toLocaleDateString('en-ZA')}</td>
               </tr>
-            )) : <tr><td colSpan={6}>No commissions yet.</td></tr>}
+            )) : <tr><td colSpan={7}>No commissions yet.</td></tr>}
           </tbody>
         </table></div>
       </section>
