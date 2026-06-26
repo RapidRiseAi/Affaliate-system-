@@ -49,13 +49,15 @@ export default async function Page({
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || '';
   const requestProto = requestHeaders.get('x-forwarded-proto') || 'https';
-  const linkOrigin = (
-    process.env.NEXT_PUBLIC_AFFILIATE_PORTAL_URL ||
+  const siteOrigin = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
     (requestHost ? `${requestProto}://${requestHost}` : '')
   ).replace(/\/$/, '');
-  const publicPath = (token: string) =>
-    `/r/${encodeURIComponent(context.affiliate.tracking_code)}/${encodeURIComponent(token)}`;
-  const publicUrl = (token: string) => `${linkOrigin}${publicPath(token)}`;
+  const publicPath = (token: string, destination: string) => {
+    const cleanDestination = destination === '/' ? '' : destination.replace(/^\/+/, '/');
+    return `/r/${encodeURIComponent(context.affiliate.tracking_code)}/${encodeURIComponent(token)}${cleanDestination}`;
+  };
+  const publicUrl = (token: string, destination: string) => `${siteOrigin}${publicPath(token, destination)}`;
   const createdLink = links?.find((link) => link.tracking_token === created);
 
   return (
@@ -84,13 +86,13 @@ export default async function Page({
               <p className="font-bold">Tracking link created</p>
               <a
                 className="mt-1 block break-all text-sm text-cyan-300 underline"
-                href={publicUrl(createdLink.tracking_token)}
+                href={publicUrl(createdLink.tracking_token, createdLink.destination_url)}
               >
-                {publicUrl(createdLink.tracking_token)}
+                {publicUrl(createdLink.tracking_token, createdLink.destination_url)}
               </a>
             </div>
           </div>
-          <CopyLinkButton value={publicUrl(createdLink.tracking_token)} />
+          <CopyLinkButton value={publicUrl(createdLink.tracking_token, createdLink.destination_url)} />
         </section>
       ) : null}
 
@@ -188,11 +190,11 @@ export default async function Page({
                         <div className="flex min-w-0 items-center gap-2">
                           <a
                             className="block max-w-64 truncate text-cyan-300 underline"
-                            href={publicUrl(link.tracking_token)}
+                            href={publicUrl(link.tracking_token, link.destination_url)}
                           >
-                            {publicUrl(link.tracking_token)}
+                            {publicUrl(link.tracking_token, link.destination_url)}
                           </a>
-                          <CopyLinkButton value={publicUrl(link.tracking_token)} className="min-h-9 shrink-0 px-2" />
+                          <CopyLinkButton value={publicUrl(link.tracking_token, link.destination_url)} className="min-h-9 shrink-0 px-2" />
                         </div>
                       </td>
                       <td>{link.channel}</td>
