@@ -64,6 +64,8 @@ export async function GET(
     link.destination_url,
     process.env.NEXT_PUBLIC_SITE_URL || req.url,
   );
+  destination.searchParams.set('ref', affiliateCode);
+  destination.searchParams.set('utm_affiliate_link', trackingToken);
   const response = NextResponse.redirect(destination);
   response.cookies.set(
     'rrai_ref',
