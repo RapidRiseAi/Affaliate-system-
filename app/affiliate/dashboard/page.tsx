@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, BadgePercent, Link2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BadgePercent, CheckCircle2, Link2, Radio, ShieldCheck } from 'lucide-react';
 import { Metric, Shell } from '@/components/Shell';
 import {
   formatZar,
@@ -87,13 +87,18 @@ export default async function Page() {
     ['Commission pending', formatZar(pendingCommission)],
     ['Paid commission', formatZar(paidCommission)],
   ];
+  const firstName = context.affiliate.name.trim().split(/\s+/)[0] || 'Partner';
 
   return (
     <Shell>
-      <section className="glass relative overflow-hidden rounded-[2rem] p-7 md:p-10">
-        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" />
-        <div className="relative flex flex-wrap items-end justify-between gap-6"><div><span className="badge"><ShieldCheck aria-hidden size={14} />Active CRM affiliate</span><h1 className="mt-5 text-4xl font-black tracking-[-.035em] md:text-5xl">Partner overview</h1><p className="mt-3 max-w-3xl text-slate-300">A privacy-safe view of your referral activity, pipeline progress and earned commission.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 px-5 py-4"><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Affiliate code</p><p className="mt-1 font-mono text-lg font-bold text-cyan-300">{context.affiliate.tracking_code}</p></div></div>
-        <div className="relative mt-8 grid gap-3 sm:grid-cols-2"><Link href="/affiliate/links" className="btn btn-primary"><Link2 aria-hidden size={17} />Create referral link <ArrowRight aria-hidden size={17} /></Link><Link href="/affiliate/commissions" className="btn btn-muted"><BadgePercent aria-hidden size={17} />View commission statement</Link></div>
+      <section className="landing-hero p-7 md:p-10">
+        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-500/15 blur-3xl" aria-hidden />
+        <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div><span className="badge"><ShieldCheck aria-hidden size={14} />Active partner workspace</span><p className="eyebrow mt-6">Partner overview</p><h1 className="mt-2 text-4xl font-bold tracking-[-.045em] md:text-6xl">Welcome back, <span className="gradient-text">{firstName}.</span></h1><p className="mt-4 max-w-2xl text-slate-400">Your privacy-safe view of referral activity, CRM progress, commercial terms, and earned commission.</p></div>
+          <div className="min-w-64 rounded-2xl border border-white/10 bg-black/20 p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between gap-4"><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-slate-500">Affiliate code</p><span className="flex items-center gap-2 text-[10px] font-bold text-emerald-200"><span className="signal-dot" />Active</span></div><p className="mt-2 font-mono text-lg font-bold text-cyan-300">{context.affiliate.tracking_code}</p></div>
+        </div>
+        <div className="relative z-10 mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/affiliate/links" className="btn btn-primary min-h-12 px-5"><Link2 aria-hidden size={17} />Create referral link <ArrowRight aria-hidden size={17} /></Link><Link href="/affiliate/commissions" className="btn btn-muted min-h-12 px-5"><BadgePercent aria-hidden size={17} />View commission statement</Link></div>
+        <div className="relative z-10 mt-7 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.08] pt-5 text-xs font-bold text-slate-500"><span className="inline-flex items-center gap-2"><Radio aria-hidden size={14} className="text-cyan-300" />CRM-connected reporting</span><span className="inline-flex items-center gap-2"><CheckCircle2 aria-hidden size={14} className="text-emerald-300" />Privacy-safe attribution</span></div>
       </section>
       <section className="mt-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
