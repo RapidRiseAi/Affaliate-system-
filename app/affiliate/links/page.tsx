@@ -1,5 +1,6 @@
-import { CheckCircle2, Link2, MousePointerClick, Pause, Play, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Link2, MousePointerClick, Pause, Pencil, Play, QrCode, ShieldCheck, Trash2 } from 'lucide-react';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AsyncSubmitButton } from '@/components/AsyncSubmitButton';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
@@ -17,7 +18,7 @@ const errorMessages: Record<string, string> = {
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; error?: string }>;
+  searchParams: Promise<{ created?: string; error?: string; updated?: string; deleted?: string }>;
 }) {
   const authUser = await getAuthenticatedUser();
   if (!authUser) redirect('/partners/login');
@@ -25,11 +26,11 @@ export default async function Page({
   const context = await getPortalAffiliateContext(authUser);
   if (!context) redirect('/affiliate/dashboard');
 
-  const { created, error } = await searchParams;
+  const { created, error, updated, deleted } = await searchParams;
   const supabase = adminSupabase();
   const { data: links } = await supabase
     .from('affiliate_portal_tracking_links')
-    .select('id,tracking_token,destination_url,private_reference,channel,is_active,expires_at,created_at')
+    .select('id,tracking_token,destination_url,private_reference,channel,notes,is_active,expires_at,created_at')
     .eq('affiliate_id', context.affiliate.id)
     .order('created_at', { ascending: false });
 
@@ -103,6 +104,12 @@ export default async function Page({
           className="mt-5 rounded-2xl border border-red-300/25 bg-red-300/[0.07] p-5 text-sm text-red-100"
         >
           {errorMessages[error] ?? errorMessages.update}
+        </section>
+      ) : null}
+
+      {updated || deleted ? (
+        <section role="status" className="mt-5 rounded-2xl border border-emerald-300/25 bg-emerald-300/[0.07] p-4 text-sm text-emerald-100">
+          {deleted ? 'Tracking link deleted. Past attribution history is preserved.' : 'Tracking link updated.'}
         </section>
       ) : null}
 
@@ -201,21 +208,27 @@ export default async function Page({
                       <td>{link.channel}</td>
                       <td className="font-bold">{clickCounts.get(link.id) ?? 0}</td>
                       <td>
-                        <form action={`/api/affiliate/links/${link.id}/toggle`} method="post">
-                          <AsyncSubmitButton pendingLabel="Updating..." className="btn-muted px-3 py-2 text-xs">
-                            {link.is_active ? (
-                              <>
-                                <Pause aria-hidden size={14} />
-                                Pause
-                              </>
-                            ) : (
-                              <>
-                                <Play aria-hidden size={14} />
-                                Reactivate
-                              </>
-                            )}
-                          </AsyncSubmitButton>
-                        </form>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link href={`/affiliate/links/${link.id}/qr`} target="_blank" className="btn-muted inline-flex items-center gap-1 px-2 py-1.5 text-xs" title="Open QR code"><QrCode aria-hidden size={14} />QR</Link>
+                            <form action={`/api/affiliate/links/${link.id}/toggle`} method="post">
+                              <AsyncSubmitButton pendingLabel="..." className="btn-muted px-2 py-1.5 text-xs">
+                                {link.is_active ? <><Pause aria-hidden size={14} />Pause</> : <><Play aria-hidden size={14} />Reactivate</>}
+                              </AsyncSubmitButton>
+                            </form>
+                            <form action={`/api/affiliate/links/${link.id}/delete`} method="post">
+                              <AsyncSubmitButton pendingLabel="..." className="btn-muted px-2 py-1.5 text-xs text-red-200"><Trash2 aria-hidden size={14} />Delete</AsyncSubmitButton>
+                            </form>
+                          </div>
+                          <details className="group">
+                            <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200 [&::-webkit-details-marker]:hidden"><Pencil aria-hidden size={13} />Edit</summary>
+                            <form action={`/api/affiliate/links/${link.id}/update`} method="post" className="mt-2 grid gap-2">
+                              <input name="private_reference" className="input text-xs" defaultValue={link.private_reference} placeholder="Private reference" required maxLength={250} />
+                              <textarea name="notes" className="input min-h-16 text-xs" defaultValue={link.notes ?? ''} placeholder="Private notes" maxLength={2000} />
+                              <AsyncSubmitButton pendingLabel="Saving..." className="btn-primary px-3 py-1.5 text-xs">Save changes</AsyncSubmitButton>
+                            </form>
+                          </details>
+                        </div>
                       </td>
                     </tr>
                   ))
