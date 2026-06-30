@@ -12,8 +12,16 @@ type ErrorWithCode = { code?: unknown; name?: unknown };
 // NEXT_PUBLIC_PORTAL_URL, then the forwarded host the request actually arrived
 // on, then the request URL origin.
 export function portalOrigin(request: Request) {
-  if (process.env.NEXT_PUBLIC_PORTAL_URL) {
-    return process.env.NEXT_PUBLIC_PORTAL_URL.replace(/\/$/, '');
+  const configured = process.env.NEXT_PUBLIC_PORTAL_URL;
+  if (configured) {
+    // Normalise to scheme://host only — tolerate a value that mistakenly
+    // includes a path (e.g. ".../partners"), a trailing slash, or stray spaces,
+    // so the auth callback is always built as <origin>/auth/callback.
+    try {
+      return new URL(configured.trim()).origin;
+    } catch {
+      // Malformed value → fall through to header-based detection.
+    }
   }
   const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
   const proto = request.headers.get('x-forwarded-proto') || 'https';
