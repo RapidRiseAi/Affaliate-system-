@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, CircleDollarSign, FileSignature, FileText, LayoutDashboard, Link2, LogIn, LogOut, Megaphone, Send, Settings } from 'lucide-react';
+import { Activity, BarChart3, CircleDollarSign, FileSignature, FileText, LayoutDashboard, Link2, LogIn, LogOut, Megaphone, Send, Settings } from 'lucide-react';
 import { AsyncSubmitButton } from './AsyncSubmitButton';
 
 const affiliateLinks = [
@@ -11,6 +11,7 @@ const affiliateLinks = [
   ['/affiliate/promote', 'Promote', Megaphone],
   ['/affiliate/leads', 'Referrals', BarChart3],
   ['/affiliate/commissions', 'Earnings', CircleDollarSign],
+  ['/affiliate/activity', 'Activity', Activity],
   ['/affiliate/agreement', 'Agreement', FileSignature],
   ['/affiliate/settings', 'Settings', Settings],
 ] as const;
