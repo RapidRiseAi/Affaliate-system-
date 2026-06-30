@@ -60,8 +60,8 @@ _Last updated: 2026-07-01_
   fraudulent attribution or exclude it from commissions.
 - [ ] **PDF export** — signed-agreement PDF + commission/payout statement for
   affiliates (record-keeping / trust).
-- [ ] **Sender-identity consistency** — README uses `partners@`, code defaults to
-  `team@`; pick one verified domain identity.
+- [x] **Sender-identity consistency** — standardized on `team@rapidriseai.com`
+  (verified domain, SPF/DKIM via Resend); README + .env.example aligned.
 
 ---
 
@@ -83,9 +83,9 @@ _Last updated: 2026-07-01_
 
 ## 🔗 Cross-project / docs hygiene
 
-- [ ] **Dead redirect route** — portal's own `app/r/[code]/[token]/route.ts` is
-  unused (links resolve on the website). Remove it, or repoint links. (Attribution
-  window already unified to 90 days.)
+- [x] **Dead redirect route** — removed the portal's unused
+  `app/r/[code]/[token]/route.ts` (links resolve on the website). If you ever want
+  server-side (non-JS) redirects for robustness, that's a separate re-architecture.
 - [ ] **Stale docs** — `rrai-website-3d/docs/affiliate-integration.md` says the
   website migration is "NOT applied" (it is); resolve the `[CONFIRM]` business
   decisions noted there.
