@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Download } from 'lucide-react';
 import { Shell } from '@/components/Shell';
 import {
   formatZar,
@@ -42,9 +44,14 @@ export default async function Page() {
   return (
     <Shell>
       <section className="glass rounded-[2rem] p-7 md:p-9">
-        <p className="eyebrow">CRM statements</p>
-        <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Commission statement</h1>
-        <p className="mt-3 max-w-2xl text-slate-300">Every amount is backed by the agreement model, product rate and source CRM record used for calculation.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow">CRM statements</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Commission statement</h1>
+            <p className="mt-3 max-w-2xl text-slate-300">Every amount is backed by the agreement model, product rate and source CRM record used for calculation.</p>
+          </div>
+          <Link href="/affiliate/commissions/print" className="btn btn-muted min-h-10 px-4 text-sm"><Download aria-hidden size={15} />Download PDF</Link>
+        </div>
         <div className="table-wrap mt-6"><table className="table">
           <thead><tr><th>CRM record</th><th>Type</th><th>Base / rate</th><th>Amount</th><th>Status</th><th>Payout</th><th>Created</th></tr></thead>
           <tbody>
