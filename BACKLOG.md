@@ -39,15 +39,16 @@ _Last updated: 2026-07-01_
 
 ---
 
-## 🚧 Remaining P0 (started, not finished)
+## 🚧 Remaining P0 — DONE
 
-- [ ] **Query optimization for scale** — move click-counting into SQL (view/RPC),
-  paginate the admin `loadAffiliateOperations` fan-out (loads all rows + up to
-  5,000 click events into JS), and bound the portal dashboard/links queries.
-- [ ] **Migration consolidation** — make **RRAI-Internal-Tools** the sole owner of
-  migrations; remove the duplicate `supabase/migrations` folders from the portal +
-  website repos; provide the `supabase migration repair` runbook. (Owner already
-  agreed; needs the terminal step.)
+- [x] **Query optimization (click counts)** — per-affiliate + per-link click counts
+  are now SQL views; portal links page and admin no longer pull raw click rows.
+  (Deeper admin `loadAffiliateOperations` pagination/aggregation remains — see P2.)
+- [x] **Migration consolidation** — **RRAI-Internal-Tools** is now the sole owner;
+  it holds the complete set (incl. `0001`), the portal's `supabase/migrations` was
+  removed, and all three repos have ownership notes. No live-DB change was needed.
+  Optional fresh-rebuild rename + `migration repair` runbook is in the owner repo's
+  `supabase/MIGRATIONS.md`.
 
 ---
 
