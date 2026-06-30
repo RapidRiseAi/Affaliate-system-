@@ -14,4 +14,9 @@ RESEND_API_KEY=
 EMAIL_FROM="Rapid Rise AI <partners@rapidriseai.com>"
 ```
 
-Run `supabase/migrations/0001_affiliate_system.sql` in the RRAI Supabase project before using the API routes.
+## Database
+
+This app shares one Supabase database with the CRM and website, but does **not**
+own migrations. Schema changes live in the **RRAI-Internal-Tools** repo (the sole
+migration owner). See [`supabase/MIGRATIONS.md`](supabase/MIGRATIONS.md). Do not
+run `supabase db push` from here.
