@@ -34,7 +34,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   return (
     <Shell nav="public">
       <div className="grid min-h-[680px] overflow-hidden rounded-[2rem] border border-white/[0.1] bg-[#07101d]/70 shadow-2xl shadow-black/30 lg:grid-cols-[1.08fr_.92fr]">
-        <section className="relative overflow-hidden border-b border-white/[0.08] p-7 sm:p-10 lg:border-b-0 lg:border-r lg:p-12">
+        <section className="relative order-2 overflow-hidden border-t border-white/[0.08] p-7 sm:p-10 lg:order-none lg:border-t-0 lg:border-r lg:p-12">
           <div className="absolute -left-28 -top-28 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" aria-hidden />
           <div className="absolute -bottom-32 right-0 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" aria-hidden />
           <div className="relative z-10 flex h-full flex-col">
@@ -56,7 +56,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
           </div>
         </section>
 
-        <section className="grid place-items-center p-5 sm:p-9 lg:p-12">
+        <section className="order-1 grid place-items-center p-5 sm:p-9 lg:order-none lg:p-12">
           <form className="w-full max-w-md" action="/auth/login" method="post">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-300 shadow-lg shadow-cyan-950/20"><LockKeyhole aria-hidden size={22} /></div>
             <p className="eyebrow mt-6">Approved partners</p>
