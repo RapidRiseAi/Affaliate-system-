@@ -72,6 +72,11 @@ _Last updated: 2026-07-01_
   per-link time-series analytics, QR codes, bulk create.
 - [ ] **Approval email** — include the tracking code, a portal link, and the
   "sign your agreement" next step ([RRAI-Internal-Tools/lib/actions.ts] approve).
+- [ ] **Admin `loadAffiliateOperations` scale** — click counts are now SQL views ✅,
+  but it still loads full `referrals`, `commissions`, `leads`, `quotes`, `projects`,
+  `payments` + `auth.admin.listUsers({perPage:1000})` on every /affiliates load.
+  Needs pagination/scoping + SQL aggregation for commission owed/paid totals
+  (can't just cap — the totals would be wrong). Fine at current size; do before scale.
 
 ---
 
