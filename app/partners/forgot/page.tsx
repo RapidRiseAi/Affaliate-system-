@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, KeyRound, MailCheck, ShieldCheck } from 'lucide-react';
+import { ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
 import { Shell } from '@/components/Shell';
 import { AsyncSubmitButton } from '@/components/AsyncSubmitButton';
 
@@ -20,6 +20,8 @@ const errors: Record<string, string> = {
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const query = await searchParams;
+  // Keep the resend section expanded after a resend so the result is visible.
+  const resendOpen = query.status === 'resent';
 
   return (
     <Shell nav="public">
@@ -53,24 +55,23 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
               Send reset link <ArrowRight aria-hidden size={17} />
             </AsyncSubmitButton>
           </form>
-        </section>
 
-        <section className="glass rounded-[2rem] p-7 sm:p-9">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-300/10 text-cyan-300">
-            <MailCheck aria-hidden size={20} />
-          </div>
-          <h2 className="mt-4 text-xl font-black">Didn’t get your verification email?</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            If you applied but never confirmed your email, request a fresh verification link here.
-          </p>
-          <form className="mt-5" action="/auth/resend-verification" method="post">
-            <label className="form-label">Email address
-              <input className="input" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
-            </label>
-            <AsyncSubmitButton pendingLabel="Resending…" className="btn-muted mt-5 min-h-12 w-full">
-              Resend verification email
-            </AsyncSubmitButton>
-          </form>
+          <details open={resendOpen} className="group mt-6 border-t border-white/[0.08] pt-5">
+            <summary className="cursor-pointer list-none text-sm font-semibold text-cyan-300 transition-colors hover:text-cyan-200 [&::-webkit-details-marker]:hidden">
+              Didn’t get your verification email? Resend it
+            </summary>
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              If you applied but never confirmed your email, request a fresh verification link.
+            </p>
+            <form className="mt-4" action="/auth/resend-verification" method="post">
+              <label className="form-label">Email address
+                <input className="input" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
+              </label>
+              <AsyncSubmitButton pendingLabel="Resending…" className="btn-muted mt-4 min-h-12 w-full">
+                Resend verification email
+              </AsyncSubmitButton>
+            </form>
+          </details>
         </section>
 
         <p className="flex items-center justify-center gap-2 text-sm text-slate-500">
