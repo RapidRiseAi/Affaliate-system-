@@ -27,24 +27,25 @@ export default async function Page({
 
   const { created, error } = await searchParams;
   const supabase = adminSupabase();
-  const [{ data: links }, { data: clicks }] = await Promise.all([
-    supabase
-      .from('affiliate_portal_tracking_links')
-      .select('id,tracking_token,destination_url,private_reference,channel,is_active,expires_at,created_at')
-      .eq('affiliate_id', context.affiliate.id)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('affiliate_portal_click_events')
-      .select('tracking_link_id')
-      .eq('affiliate_id', context.affiliate.id),
-  ]);
+  const { data: links } = await supabase
+    .from('affiliate_portal_tracking_links')
+    .select('id,tracking_token,destination_url,private_reference,channel,is_active,expires_at,created_at')
+    .eq('affiliate_id', context.affiliate.id)
+    .order('created_at', { ascending: false });
 
-  const clickCounts = new Map<string, number>();
-  for (const click of clicks ?? []) {
-    if (click.tracking_link_id) {
-      clickCounts.set(click.tracking_link_id, (clickCounts.get(click.tracking_link_id) ?? 0) + 1);
-    }
-  }
+  // Counts come pre-aggregated from a SQL view (one row per link) instead of
+  // pulling every click_events row into the page.
+  const linkIds = (links ?? []).map((link) => link.id);
+  const { data: clickStats } = linkIds.length
+    ? await supabase
+        .from('affiliate_portal_tracking_link_click_stats')
+        .select('tracking_link_id,clicks_total')
+        .in('tracking_link_id', linkIds)
+    : { data: [] };
+  const clickCounts = new Map<string, number>(
+    (clickStats ?? []).map((stat) => [stat.tracking_link_id, stat.clicks_total]),
+  );
+  const totalClicks = (clickStats ?? []).reduce((sum, stat) => sum + (stat.clicks_total ?? 0), 0);
 
   const requestHeaders = await headers();
   const requestHost = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host') || '';
@@ -163,7 +164,7 @@ export default async function Page({
             </div>
             <span className="badge">
               <MousePointerClick aria-hidden size={14} />
-              {clicks?.length ?? 0} clicks
+              {totalClicks} clicks
             </span>
           </div>
 
