@@ -23,14 +23,19 @@ _Last updated: 2026-07-01_
 
 ## 🔧 Config to finish / verify (no code — dashboards)
 
-- [ ] **Custom SMTP (Resend) in Supabase Auth** — required for reliable
-  password-reset / verification email delivery. Default Supabase SMTP is throttled
-  (~3–4/hr) and not production-grade. (Was "Part 3C".)
-- [ ] Confirm **Upstash env vars** set in BOTH Vercel projects + redeployed
-  (rate limiting fails open until then).
-- [ ] Confirm **NEXT_PUBLIC_PORTAL_URL** = `https://affiliates.rapidriseai.com`
-  in the portal's Vercel project.
-- [ ] Run the **end-to-end password-reset test** in production once SMTP is live.
+- [x] **Custom SMTP (Resend) in Supabase Auth** — done; reset/verification emails
+  deliver via `smtp.resend.com`.
+- [x] **Upstash env vars** set in both Vercel projects.
+- [x] **NEXT_PUBLIC_PORTAL_URL** = `https://affiliates.rapidriseai.com` in portal.
+- [x] **End-to-end password-reset test** — passed in production (2026-07-01).
+- [ ] (website) Confirm Upstash vars present + redeploy so `/api/track` + `/api/intent`
+  rate limiting is active (portal already verified).
+
+> ⚠️ **Do not revert the Supabase email templates.** "Reset Password" and
+> "Confirm signup" must use the `token_hash` format pointing at
+> `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery|email&next=...`.
+> Switching back to `{{ .ConfirmationURL }}` reintroduces the prefetch
+> single-use-token bug (links read as "otp_expired").
 
 ---
 
