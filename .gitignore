@@ -5,3 +5,6 @@ node_modules
 out
 
 tsconfig.tsbuildinfo
+
+# Local Supabase CLI config (contains local-dev secrets; not used in prod)
+supabase/config.toml

@@ -11,12 +11,14 @@ export const metadata: Metadata = {
 
 const messages: Record<string, string> = {
   'verify-email': 'Application received. Check your inbox and verify your email address before an administrator can approve you.',
+  'password-updated': 'Your password has been updated. Sign in with your new password.',
 };
 const errors: Record<string, string> = {
   invalid: 'The email or password is incorrect.',
-  unverified: 'Verify your email address before signing in.',
-  verification: 'That verification link is invalid or expired. Request a new verification email below.',
+  unverified: 'Verify your email address before signing in. You can resend the verification email from the reset page.',
+  verification: 'That verification link is invalid or expired. Request a new one from the reset page.',
   origin: 'For your protection, that sign-in request was rejected. Refresh this page and try again.',
+  rate: 'Too many sign-in attempts. Please wait a few minutes and try again.',
 };
 
 const benefits = [
@@ -66,6 +68,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
 
             <label className="form-label mt-7">Email address<input className="input" name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></label>
             <label className="form-label mt-4">Password<input className="input" name="password" type="password" autoComplete="current-password" placeholder="Enter your password" required /></label>
+            <div className="mt-3 text-right text-sm"><Link className="font-semibold text-cyan-300 transition-colors hover:text-cyan-200" href="/partners/forgot">Forgot your password?</Link></div>
             <AsyncSubmitButton pendingLabel="Signing in…" className="btn-primary mt-6 min-h-12 w-full">Sign in securely <ArrowRight aria-hidden size={17} /></AsyncSubmitButton>
 
             <div className="mt-7 border-t border-white/[0.08] pt-6 text-sm text-slate-500">Not approved yet? <Link className="inline-flex items-center gap-1 font-bold text-cyan-300 transition-colors hover:text-cyan-200" href="/partners/apply">Submit a partner application <ArrowRight aria-hidden size={14} /></Link></div>

@@ -3,7 +3,9 @@ import { z } from 'zod';
 import {
   hasTrustedOrigin,
   logServerError,
+  portalOrigin,
 } from '@/lib/server-security';
+import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { adminSupabase, serverSupabase } from '@/lib/supabase';
 
 const applicationSchema = z.object({
@@ -42,6 +44,12 @@ export async function POST(req: Request) {
     return fail('invalid_origin', 403, 'Request origin was rejected.');
   }
 
+  // Throttle application spam / signup abuse: 5 per IP per hour.
+  const limit = await rateLimit(`apply:${clientIp(req)}`, 5, 3600);
+  if (!limit.ok) {
+    return fail('rate_limited', 429, 'Too many attempts were made. Please wait a while before trying again.');
+  }
+
   const form = Object.fromEntries(await req.formData());
   const parsed = applicationSchema.safeParse(form);
   if (!parsed.success) {
@@ -74,12 +82,12 @@ export async function POST(req: Request) {
   }
 
   const supabase = await serverSupabase();
-  const redirectBase = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  const redirectBase = portalOrigin(req);
   const { data: signup, error: signupError } = await supabase.auth.signUp({
     email: data.email,
     password,
     options: {
-      emailRedirectTo: `${redirectBase.replace(/\/$/, '')}/auth/callback`,
+      emailRedirectTo: `${redirectBase}/auth/callback`,
     },
   });
 

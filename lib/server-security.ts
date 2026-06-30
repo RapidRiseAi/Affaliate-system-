@@ -5,6 +5,22 @@ import { NextResponse } from 'next/server';
 
 type ErrorWithCode = { code?: unknown; name?: unknown };
 
+// The portal's OWN serving origin — for auth callbacks (email verification,
+// password reset). This is deliberately NOT NEXT_PUBLIC_SITE_URL: that points at
+// the marketing website (so referral links resolve there), and sending auth
+// links to the website would break verification + reset. Prefer an explicit
+// NEXT_PUBLIC_PORTAL_URL, then the forwarded host the request actually arrived
+// on, then the request URL origin.
+export function portalOrigin(request: Request) {
+  if (process.env.NEXT_PUBLIC_PORTAL_URL) {
+    return process.env.NEXT_PUBLIC_PORTAL_URL.replace(/\/$/, '');
+  }
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  if (host) return `${proto}://${host}`;
+  return new URL(request.url).origin;
+}
+
 export function hasTrustedOrigin(request: Request) {
   const requestOrigin = new URL(request.url).origin;
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL
