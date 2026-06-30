@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, CircleDollarSign, FileSignature, FileText, LayoutDashboard, Link2, LogIn, LogOut, Send, Settings } from 'lucide-react';
+import { BarChart3, CircleDollarSign, FileSignature, FileText, LayoutDashboard, Link2, LogIn, LogOut, Megaphone, Send, Settings } from 'lucide-react';
 import { AsyncSubmitButton } from './AsyncSubmitButton';
 
 const affiliateLinks = [
   ['/affiliate/dashboard', 'Overview', LayoutDashboard],
   ['/affiliate/links', 'Links', Link2],
+  ['/affiliate/promote', 'Promote', Megaphone],
   ['/affiliate/leads', 'Referrals', BarChart3],
   ['/affiliate/commissions', 'Earnings', CircleDollarSign],
   ['/affiliate/agreement', 'Agreement', FileSignature],
