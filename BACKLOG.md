@@ -35,16 +35,6 @@ _Last updated: 2026-07-01_
   for the commission owed/paid totals (can't just cap — totals would be wrong).
   This is a focused refactor with UI changes + testing; intentionally not rushed.
 
-### P1 — money integrity (next)
-- [ ] **Automatic commission reversal on refund / invoice void.** Commissions are
-  now created automatically when a payment is marked PAID (build / recurring /
-  lifetime — see Completed). The mirror case is not yet automatic: if a payment is
-  later **refunded** or an invoice is **voided/un-paid**, the matching PENDING
-  commission should auto-reverse (or be clawed back if already paid out). Add a
-  trigger on `payments` (status → REFUNDED/VOID) and on `invoices` (PAID → not-PAID)
-  that voids the linked commission + writes an audit event. This is the last known
-  gap in the "no human can silently create/destroy money" chain.
-
 ### P2 — polish / growth
 - [ ] **Marketing assets — branded banners/graphics.** Copy snippets + QR codes are
   done (Promote page); branded image assets still need design files from the team.
@@ -85,6 +75,14 @@ _Last updated: 2026-07-01_
 - **SECURITY DEFINER RPCs** (`accept_quote_atomic`, `convert_lead_to_client_atomic`, `rls_auto_enable`) — revoked from anon/authenticated **and PUBLIC**; service-role only.
 - **`set_updated_at`** pinned `search_path`.
 - Remaining advisor WARN: only leaked-password protection (Free-plan, deferred above).
+
+### Commission reversal on refund / void (applied to live DB + verified end-to-end, adversarially reviewed)
+- **Automatic reversal**: when the money that created a commission is clawed back, the commission is reversed automatically — no employee action required. Reversal is decided at the **invoice revenue level** (an invoice can have several PAID payments): a commission reverses only once the invoice has **no remaining PAID coverage**, so refunding one of two payments never over-reverses, and a full void always reverses.
+- **Clawback split** (aligned with the commission state machine): not-yet-paid-out → **CANCELLED** (clean); already paid out (any payout_item, `PAID`, or `paid_at`) → **DISPUTED** and flagged for a **human clawback** — already-disbursed money is never silently erased.
+- **Genuine re-payment re-credits**: a clean reversal frees the automation key (renamed, snapshot preserved for forensics) so if the customer really re-pays, the affiliate is credited again; DISPUTED commissions stay locked until a human reconciles.
+- **Reachable + safe UI**: admin "Refund & reverse" (on PAID payments) and "Void & reverse commission" (on PAID invoices) actions, both behind a confirm dialog; affiliates are emailed when a commission is reversed. Every reversal writes an immutable audit event.
+- **Defence in depth**: DB CHECK constraints pin the `payments`/`commissions` status vocabularies so a typo can never write an unknown money state.
+- **Verified 2026-07-01** across five live scenarios (clean reversal, re-credit, two-payments-one-invoice coverage, invoice-void cascade, DRAFT-batch → DISPUTED); a 5-lens adversarial review caught and fixed two money bugs (DRAFT-batch over-pay, multi-payment under-reversal) before apply. Test data removed.
 
 ### Commission integrity — three-model automation (applied to live DB + verified end-to-end)
 - **Three commission models** now supported everywhere (DB constraints, admin agreement form, portal apply, all display labels): **BUILD_COST** (build cost only), **RECURRING** (post-build/recurring only), **LIFETIME** (everything).
