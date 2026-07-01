@@ -19,7 +19,7 @@ const applicationSchema = z.object({
   google_business_url: z.string().trim().max(500),
   client_types: z.string().trim().min(1).max(1000),
   motivation: z.string().trim().min(1).max(3000),
-  preferred_commission_model: z.enum(['BUILD_COST', 'LIFETIME']),
+  preferred_commission_model: z.enum(['BUILD_COST', 'LIFETIME', 'RECURRING']),
   password: z.string().min(8).max(128),
   confirm_password: z.string(),
   terms: z.literal('on'),

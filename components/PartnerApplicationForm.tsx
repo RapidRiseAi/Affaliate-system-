@@ -106,7 +106,8 @@ export function PartnerApplicationForm({ initialError }: { initialError?: string
         <select className="input" name="preferred_commission_model" required disabled={disabled} defaultValue="">
           <option value="" disabled>Choose your preference</option>
           <option value="BUILD_COST">Commission on project build cost</option>
-          <option value="LIFETIME">Lifetime commission</option>
+          <option value="RECURRING">Recurring commission (ongoing revenue)</option>
+          <option value="LIFETIME">Lifetime commission (everything)</option>
         </select>
         <span className="form-hint">This records a preference only. Final terms and product-specific rates are negotiated before activation.</span>
       </label>

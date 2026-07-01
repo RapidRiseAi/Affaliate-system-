@@ -58,7 +58,7 @@ export default async function Page() {
             {commissions?.length ? commissions.map((commission) => (
               <tr key={commission.id}>
                 <td>{commission.quotes?.[0]?.quote_number ?? commission.projects?.[0]?.name ?? commission.payments?.[0]?.reference ?? '—'}</td>
-                <td>{snapshotByCommission.get(commission.id)?.commission_model === 'BUILD_COST' ? 'Build cost' : snapshotByCommission.get(commission.id)?.commission_model === 'LIFETIME' ? 'Lifetime' : commission.commission_type}</td>
+                <td>{snapshotByCommission.get(commission.id)?.commission_model === 'BUILD_COST' ? 'Build cost' : snapshotByCommission.get(commission.id)?.commission_model === 'LIFETIME' ? 'Lifetime' : snapshotByCommission.get(commission.id)?.commission_model === 'RECURRING' ? 'Recurring' : commission.commission_type}</td>
                 <td>{snapshotByCommission.has(commission.id)
                   ? `${snapshotByCommission.get(commission.id)!.services?.[0]?.name ?? 'Product'} · ${formatZar(snapshotByCommission.get(commission.id)!.base_amount_cents)} at ${snapshotByCommission.get(commission.id)!.rate_percent}%`
                   : 'CRM amount only'}</td>

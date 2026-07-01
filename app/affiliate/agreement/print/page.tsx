@@ -49,7 +49,7 @@ export default async function Page() {
             </header>
 
             <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
-              <div><dt className="text-slate-500">Commission model</dt><dd className="font-semibold">{agreement.commission_model === 'BUILD_COST' ? 'Build-cost commission' : 'Lifetime commission'}</dd></div>
+              <div><dt className="text-slate-500">Commission model</dt><dd className="font-semibold">{agreement.commission_model === 'BUILD_COST' ? 'Build-cost commission' : agreement.commission_model === 'RECURRING' ? 'Recurring commission' : 'Lifetime commission'}</dd></div>
               <div><dt className="text-slate-500">Default rate</dt><dd className="font-semibold">{agreement.default_rate_percent ? `${agreement.default_rate_percent}%` : 'By product'}</dd></div>
               <div><dt className="text-slate-500">Effective from</dt><dd className="font-semibold">{agreement.effective_from ?? 'On signature'}</dd></div>
               <div><dt className="text-slate-500">Effective to</dt><dd className="font-semibold">{agreement.effective_to ?? 'Ongoing'}</dd></div>

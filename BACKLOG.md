@@ -35,6 +35,16 @@ _Last updated: 2026-07-01_
   for the commission owed/paid totals (can't just cap — totals would be wrong).
   This is a focused refactor with UI changes + testing; intentionally not rushed.
 
+### P1 — money integrity (next)
+- [ ] **Automatic commission reversal on refund / invoice void.** Commissions are
+  now created automatically when a payment is marked PAID (build / recurring /
+  lifetime — see Completed). The mirror case is not yet automatic: if a payment is
+  later **refunded** or an invoice is **voided/un-paid**, the matching PENDING
+  commission should auto-reverse (or be clawed back if already paid out). Add a
+  trigger on `payments` (status → REFUNDED/VOID) and on `invoices` (PAID → not-PAID)
+  that voids the linked commission + writes an audit event. This is the last known
+  gap in the "no human can silently create/destroy money" chain.
+
 ### P2 — polish / growth
 - [ ] **Marketing assets — branded banners/graphics.** Copy snippets + QR codes are
   done (Promote page); branded image assets still need design files from the team.
@@ -75,6 +85,14 @@ _Last updated: 2026-07-01_
 - **SECURITY DEFINER RPCs** (`accept_quote_atomic`, `convert_lead_to_client_atomic`, `rls_auto_enable`) — revoked from anon/authenticated **and PUBLIC**; service-role only.
 - **`set_updated_at`** pinned `search_path`.
 - Remaining advisor WARN: only leaked-password protection (Free-plan, deferred above).
+
+### Commission integrity — three-model automation (applied to live DB + verified end-to-end)
+- **Three commission models** now supported everywhere (DB constraints, admin agreement form, portal apply, all display labels): **BUILD_COST** (build cost only), **RECURRING** (post-build/recurring only), **LIFETIME** (everything).
+- **Compulsory Build-cost + Recurring/mo fields** on every invoice line (can be 0). A non-zero recurring amount **auto-creates an ACTIVE retainer** so ongoing revenue is always tracked — no employee can forget it.
+- **`invoices.revenue_kind`** (BUILD / RECURRING) drives a **model × revenue-kind** commission trigger: `earns = LIFETIME OR (BUILD_COST & BUILD) OR (RECURRING & RECURRING)`. Product-specific rates via `invoice_items.service_id` → agreement rate, else default rate.
+- **"Bill this month"** action on retainers creates a RECURRING invoice → its payment fires recurring/lifetime commissions (and correctly **not** build-cost).
+- **Safety nets:** marking an invoice PAID auto-creates the payment row; converting a lead to a client auto-links the referral's `client_id`; every automated commission writes an immutable audit event. All dedup-keyed so re-runs never double-pay.
+- **Verified 2026-07-01:** full 3×2 matrix on the live DB — all four earning cells paid at the right rate/type, both non-earning cells produced nothing; test data removed.
 
 ### P1 — trust / money
 - **Payout/banking capture** — portal settings form (SA bank + tax + PayPal) → secure service-role API → admin "Payout details on file" view.
