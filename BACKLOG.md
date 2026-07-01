@@ -27,6 +27,17 @@ _Last updated: 2026-07-01_
 
 ## 🔭 Remaining work
 
+### Tracking reliability — deferred hardening (fast follow)
+These came out of the 2026-07-01 affiliate-tracking audit. The reported bug
+(email from an affiliate link not registering) and the whole silent-failure class
+are fixed (see Completed); these are lower-severity hardening items:
+- [ ] **Dashboard + activity pages: surface query errors** like the leads page now does (they still render an empty state on a failed query). Also select+badge `fraud_flag` so flagged attributions aren't shown/counted as legitimate.
+- [ ] **Batch or replace the portal `.in()` fan-out** (leads/dashboard) with one server-side RPC/view joined by `affiliate_id` — avoids URL-length truncation once an affiliate has many referrals.
+- [ ] **Contact-form path: idempotent server-side session upsert** so the form doesn't depend on `/api/track` having already created the referral_session (M6).
+- [ ] **Post the tracking beacon to the canonical `www` host** (not a relative path) so a visitor on the apex domain never loses an unload-time beacon to the 308 redirect (L2).
+- [ ] **Rate-limit key on session/visitor token too** (not IP alone) so shared CGNAT/office IPs can't collectively throttle real visitors; error-log when a code-carrying request is throttled (L6).
+- [ ] **Monitor `/api/health`** (added) — alert if it returns 503 in production (means SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are missing and tracking is silently off). Ensure those env vars are set on **every** environment affiliate links can resolve to, not just Production.
+
 ### P2 — scale (do before high volume; fine at current size)
 - [ ] **Admin `loadAffiliateOperations` pagination/aggregation.** Click counts and
   the applicant-verification lookup are now efficient ✅, but it still loads full
@@ -75,6 +86,14 @@ _Last updated: 2026-07-01_
 - **SECURITY DEFINER RPCs** (`accept_quote_atomic`, `convert_lead_to_client_atomic`, `rls_auto_enable`) — revoked from anon/authenticated **and PUBLIC**; service-role only.
 - **`set_updated_at`** pinned `search_path`.
 - Remaining advisor WARN: only leaked-password protection (Free-plan, deferred above).
+
+### Affiliate-tracking reliability (audited 2026-07-01, fixes applied + verified)
+Reported symptom: an email sent from an affiliate link did not register on the partner's referral page. A 6-lens audit (client capture, intent delivery, serverless API, DB chain, portal display, SPA routing) + live DB evidence found the DB/display were correct but the **affiliate code was intermittently missing from the intent payload**, and the DB then **silently swallowed** the miss and returned ok=true. Fixes shipped:
+- **DB (migration `20260701250000`, live + verified):** `submit_website_contact_intent` no longer swallows attribution failures — it validates the session up front, records every miss to `affiliate_portal_audit_events` (`website_attribution_failed` / `_unknown_code`), and returns an explicit `attribution` reason (`linked` / `already_linked` / `anonymous` / `unknown_code` / `bad_session` / `failed`). `tracking_code` now matched **case-insensitively**; the per-day dedup key now **includes the code** so a coded contact is never deduped away by an earlier anonymous one; server attribution window aligned to **90 days**; **UNIQUE(referrals.lead_id)** added.
+- **Website client (`src/utils/affiliate.js`):** the intent now resolves the code from localStorage → an in-memory fallback (survives blocked storage) → the live URL before ever sending `code:null`; the dedup guard is **latched only after a confirmed send** and shortened to 60s (a failed beacon no longer permanently suppresses retries — this was the primary cause); `sendIntent` uses an observable keepalive fetch (sendBeacon fallback); session ids are always valid v4 UUIDs; no session churn in the read path. Same success-gated guard applied to `reportAffiliateVisit`.
+- **Website API:** `/api/intent` returns + logs the attribution outcome (error-level on a coded miss); added `/api/health` (503 when Supabase env unset); removed the dead RPC-name default.
+- **Portal:** the referral (leads) page now shows a distinct error banner on a query failure instead of an empty "No attributed leads yet".
+- **Verified live:** linked / uppercase-code-linked / bad-session / unknown-code / anonymous-then-coded-retry all behave correctly and are observable; test data removed.
 
 ### Commission reversal on refund / void (applied to live DB + verified end-to-end, adversarially reviewed)
 - **Automatic reversal**: when the money that created a commission is clawed back, the commission is reversed automatically — no employee action required. Reversal is decided at the **invoice revenue level** (an invoice can have several PAID payments): a commission reverses only once the invoice has **no remaining PAID coverage**, so refunding one of two payments never over-reverses, and a full void always reverses.

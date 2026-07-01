@@ -13,18 +13,21 @@ export default async function Page() {
   if (!context) redirect('/affiliate/dashboard');
 
   const supabase = adminSupabase();
-  const { data: referrals } = await supabase
+  const { data: referrals, error: referralsError } = await supabase
     .from('referrals')
     .select('id,lead_id,status')
     .eq('affiliate_id', context.affiliate.id);
   const referralIds = (referrals ?? []).map(({ id }) => id);
-  const { data: attributions } = referralIds.length
+  const { data: attributions, error: attributionsError } = referralIds.length
     ? await supabase
         .from('affiliate_portal_lead_attributions')
         .select('id,crm_referral_id,tracking_link_id,created_at,attribution_source')
         .in('crm_referral_id', referralIds)
         .order('created_at', { ascending: false })
-    : { data: [] };
+    : { data: [], error: null };
+  // A query failure must NOT look identical to "you have no referrals" — that
+  // silent-empty state is exactly what made the tracking bug hard to trust.
+  const loadError = referralsError || attributionsError;
   const referralById = new Map((referrals ?? []).map((referral) => [referral.id, referral]));
   const leadIds = (attributions ?? []).flatMap(({ crm_referral_id }) => {
     const leadId = referralById.get(crm_referral_id)?.lead_id;
@@ -69,6 +72,11 @@ export default async function Page() {
         <p className="mt-3 text-slate-300">
           Contact details stay in the CRM; affiliates see campaign, service, stage, and the latest safe progress note.
         </p>
+        {loadError ? (
+          <div className="mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/[0.08] p-4 text-sm text-amber-100">
+            We could not load your referrals right now. This is a temporary error on our side, not a sign that you have none — please refresh in a moment.
+          </div>
+        ) : null}
         <div className="table-wrap mt-6">
           <table className="table">
             <thead>
@@ -110,7 +118,7 @@ export default async function Page() {
                   );
                 })
               ) : (
-                <tr><td colSpan={6}>No attributed leads yet.</td></tr>
+                <tr><td colSpan={6}>{loadError ? 'Could not load referrals — please refresh.' : 'No attributed leads yet.'}</td></tr>
               )}
             </tbody>
           </table>
