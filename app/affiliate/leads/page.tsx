@@ -46,7 +46,7 @@ export default async function Page() {
     trackingLinkIds.length
       ? supabase
           .from('affiliate_portal_tracking_links')
-          .select('id,private_reference,channel,destination_url')
+          .select('id,private_reference,channel,destination_url,notes')
           .in('id', trackingLinkIds)
       : Promise.resolve({ data: [] }),
     leadIds.length
@@ -81,8 +81,8 @@ export default async function Page() {
           <table className="table">
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Campaign</th>
+                <th>Ref #</th>
+                <th>Link &amp; notes</th>
                 <th>Service</th>
                 <th>Stage</th>
                 <th>Last update</th>
@@ -104,7 +104,10 @@ export default async function Page() {
                     <tr key={attribution.id}>
                       <td>{attribution.id.slice(0, 8)}</td>
                       <td>
-                        <span className="block font-bold">{trackingLink?.private_reference ?? 'Website referral'}</span>
+                        <span className="block font-bold">{trackingLink?.private_reference ?? 'Direct / primary link'}</span>
+                        {trackingLink?.notes ? (
+                          <span className="mt-0.5 block max-w-xs whitespace-pre-wrap text-xs text-slate-400">{trackingLink.notes}</span>
+                        ) : null}
                         <span className="text-xs text-slate-500">{trackingLink?.channel ?? attribution.attribution_source}</span>
                       </td>
                       <td>{lead?.service_interest ?? trackingLink?.destination_url ?? 'Pending CRM link'}</td>
